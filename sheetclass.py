@@ -13,15 +13,28 @@ class sheet():
                 self.val.append([])
                 self.rc += 1
             self.val[self.rc].append(i.value)
-        print(self.val)
+
+    def update_sheet(self):
+        self.cellval = self.worksheet.range("A1:R100")
+        newval = []
+        self.rc = -1
+        for i in self.cellval:
+            if self.rc != i.row - 1:
+                newval.append([])
+                self.rc += 1
+            newval[self.rc].append(i.value)
+        self.val = newval
+
 
     def findrow(self, colstart, colfinish):
+        self.update_sheet()
         r = 1
         while self.val[r][colstart:colfinish + 1] != [""] * (colfinish - colstart + 1):
             r += 1
         return r
 
     def add_map(self, beatmapid, t, comments):
+        self.update_sheet()
         row = self.findrow(0, 4) + 1
         self.worksheet.update_cell(row, 1, self.mappooler)
         self.worksheet.update_cell(row, 2, "https://osu.ppy.sh/b/{}".format(beatmapid))
@@ -29,6 +42,7 @@ class sheet():
         self.worksheet.update_cell(row, 5, comments)
     
     def vote(self, beatmapid, statement):
+        self.update_sheet()
         if statement == True:
             statement = 1
         elif statement == False:
@@ -45,6 +59,7 @@ class sheet():
         self.worksheet.update_cell(row, col, statement)
     
     def pick(self, beatmapid):
+        self.update_sheet()
         mappicker = ""; t = ""
         for i in self.val:
             if i[1].split("/")[-1] == str(beatmapid):
@@ -75,6 +90,7 @@ class sheet():
         
     # nice --- "e^iz = isinz + cosz" b64---b25lIHplcm8gZWlnaHQgc2V2ZW4gbmluZSBzaXggemVybyB6ZXJv---
     def checkAgreement(self):
+        self.update_sheet()
         agreement = []
         # 5 6 7 8 df2+1
         for i in range(len(self.val)):
@@ -96,10 +112,12 @@ class sheet():
         return agreement
 
     def pickAgreement(self):
+        self.update_sheet()
         for i in self.checkAgreement():
             self.pick(i)
     
     def showAllMaps(self):
+        self.update_sheet()
         beatmapsid = []
         type_ = []
         for i in self.val:
