@@ -13,11 +13,13 @@ if path.isfile('./login.mph') == False:
         f.write(mappooleramount + "\n")
         index = input("Enter sheet index : ")
         f.write(index + "\n")
+        max_score_agreement = input("Max Score Rating : ")
+        f.write(max_score_agreement + "\n")
         print("Okay, you're logged in, welcome to Mappoolers' Helper Project !")
 
 with open('login.mph', 'r') as r:
     logindata = r.readlines()
-    mappoolsheet = sheet(logindata[0], int(logindata[3]), logindata[1].replace("\n", ""), int(logindata[2]))
+    mappoolsheet = sheet(logindata[0], int(logindata[3]), logindata[1].replace("\n", ""), int(logindata[2]), int(logindata[4]))
 
 class root(Tk):
     def __init__(self):
@@ -34,6 +36,7 @@ class root(Tk):
         self.specialButton1()
         self.specialButton2()
         self.maps = []
+        self.scores = []
         self.labelstatus = ttk.Labelframe(self, text="Status")
         self.labelstatus.grid(row=10, column=0)
         self.status = ttk.Label(self.labelstatus, text="You're currently working on {} round in {}".format(mappoolsheet.worksheet.title, mappoolsheet.worksheet.spreadsheet.title))
@@ -168,10 +171,14 @@ class root(Tk):
             self.voteframe = ttk.Labelframe(self.mainframe, text="Vote map")
             self.voteframe.grid(row=1, column=0)
             allmaparr = mappoolsheet.showAllMaps().split("\n")
-            self.mapCombobox = ttk.Combobox(self.voteframe, values = allmaparr, width=69)
+            self.mapCombobox = ttk.Combobox(self.voteframe, values = allmaparr, width=100)
             self.mapCombobox.grid(row=1, column=0)
             self.votebutton = ttk.Button(self.voteframe, text="Vote this map", command=vote)
             self.votebutton.grid(row=2, column=0)
+            self.labelscore = ttk.Label(self.voteframe, text="Score Rating")
+            self.labelscore.grid(row=1, column=1)
+            self.inputscore = ttk.Entry(self.voteframe, width=10)
+            self.inputscore.grid(row=2, column=1)
             self.mapvotedframe = ttk.Labelframe(self.mainframe, text="Voted Maps")
             self.mapvotedframe.grid(row=6, column=0)
             self.mapvoted = ttk.Label(self.mapvotedframe, text="")
@@ -180,15 +187,21 @@ class root(Tk):
             self.voteallbutton.grid(row=2, column=0)
 
         def vote():
-            self.maps.append(self.mapCombobox.get().split("/")[-1])
-            self.mapvoted['text'] += "{}\n".format(self.mapCombobox.get())
+            self.maps.append(self.mapCombobox.get().split(" ")[-3].split("/")[-1])
+            try:
+                self.scores.append(float(self.inputscore.get()))
+            except:
+                self.scores.append(mappoolsheet.max_score_rating / 2)
+            self.mapvoted['text'] += "{} (+ {})\n".format(self.mapCombobox.get(), self.inputscore.get())
             self.mapCombobox.delete(0, 'end')
+            self.inputscore.delete(0, 'end')
 
         def voteall():
-            for i in self.maps:
-                mappoolsheet.vote(i, True)
+            for i in range(len(self.maps)):
+                mappoolsheet.vote(self.maps[i], self.scores[i])
             self.mapvoted['text'] = ""
             self.maps = []
+            self.scores = []
 
         self.bt2 = ttk.Button(self.option, text="Vote", command=votelabel)
         self.bt2.grid(row=2, column=0)
@@ -213,7 +226,7 @@ class root(Tk):
             self.pickallbutton.grid(row=2, column=0)
 
         def pick():
-            self.maps.append(self.mappickCombobox.get().split("/")[-1])
+            self.maps.append(self.mappickCombobox.get().split(" ")[-3].split("/")[-1])
             self.mappicked['text'] += "{}\n".format(self.mappickCombobox.get())
             self.mappickCombobox.delete(0, 'end')
 

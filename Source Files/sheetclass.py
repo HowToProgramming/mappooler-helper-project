@@ -1,7 +1,7 @@
 from start import osu, atr
 
 class sheet():
-    def __init__(self, sheeturl, index, mappooler, mappooleramt):
+    def __init__(self, sheeturl, index, mappooler, mappooleramt, max_score_rating):
         self.worksheet = atr.open_by_url(sheeturl).get_worksheet(index)
         self.mappooler = mappooler
         self.mappooleramt = mappooleramt
@@ -13,6 +13,7 @@ class sheet():
                 self.val.append([])
                 self.rc += 1
             self.val[self.rc].append(i.value)
+        self.max_score_rating = max_score_rating
 
     def update_sheet(self):
         self.cellval = self.worksheet.range("A1:R100")
@@ -43,10 +44,6 @@ class sheet():
     
     def vote(self, beatmapid, statement):
         self.update_sheet()
-        if statement == True:
-            statement = 1
-        elif statement == False:
-            statement = 0
         row = 0; col = 0
         for i in self.val:
             row += 1
@@ -56,7 +53,7 @@ class sheet():
             col += 1
             if bruh == self.mappooler:
                 break
-        self.worksheet.update_cell(row, col, statement)
+        self.worksheet.update_cell(row, col, str(statement))
     
     def pick(self, beatmapid):
         self.update_sheet()
@@ -98,16 +95,14 @@ class sheet():
             for j in range(5,5 + self.mappooleramt):
                 if i == 0:
                     continue
-                if self.val[i][j] == 'TRUE':
-                    sumagreement += 1
-                    continue
-                if self.val[i][j] == "FALSE":
-                    continue
                 try:
-                    sumagreement += int(self.val[i][j])
+                    if float(self.val[i][j]) > self.max_score_rating:
+                        sumagreement += self.max_score_rating
+                    else:
+                        sumagreement += float(self.val[i][j])
                 except:
                     continue
-            if(sumagreement >= self.mappooleramt // 2):
+            if(sumagreement >= self.mappooleramt * self.max_score_rating / 2):
                 agreement.append(int(self.val[i][1].split("/")[-1]))
         return agreement
 
@@ -126,10 +121,19 @@ class sheet():
             beatmapsid.append(i[1].split("/")[-1])
             type_.append(i[3])
         str_beatmap_data = ""
-        for i in range(len(beatmapsid)):
+        for i in range(1, len(beatmapsid) - 1):
+            sumagreement = 0
+            for j in range(5,5 + self.mappooleramt):
+                try:
+                    if float(self.val[i][j]) > self.max_score_rating:
+                        sumagreement += self.max_score_rating
+                    else:
+                        sumagreement += float(self.val[i][j])
+                except:
+                    continue
             try:
-                bmdata = osu.beatmaps(beatmapsid[i])
-                str_beatmap_data += "[{}] {} - {} [{}] - https://osu.ppy.sh/b/{}\n".format(type_[i], bmdata['artist'], bmdata['title'], bmdata['version'], beatmapsid[i])
+                bmdata = osu.beatmaps(beatmapsid[i - 1])
+                str_beatmap_data += "[{}] {} - {} [{}] - https://osu.ppy.sh/b/{} ({}/{} Agreements)\n".format(type_[i - 1], bmdata['artist'], bmdata['title'], bmdata['version'], beatmapsid[i - 1], sumagreement, self.mappooleramt * self.max_score_rating)
             except:
                 pass
         return str_beatmap_data
