@@ -5,7 +5,7 @@ from thisisatoken import token
 import base64
 import json
 osu = main(token)
-loginfile = open("agpwejgepigh888887777.otnpj", "rb").read()
+loginfile = open("hello.world", "rb").read()
 logindata = base64.decodebytes(loginfile)
 logindatareal = json.loads(logindata.decode("ascii"))
 scope = ['https://www.googleapis.com/auth/spreadsheets']

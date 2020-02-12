@@ -1,7 +1,9 @@
-from start import osu, atr
+from start import osu, atr, base64
+from os import path
 
 class sheet():
     def __init__(self, sheeturl, index, mappooler, mappooleramt, max_score_rating):
+        self.tour_id = sheeturl.split("/")[-2]
         self.worksheet = atr.open_by_url(sheeturl).get_worksheet(index)
         self.mappooler = mappooler
         self.mappooleramt = mappooleramt
@@ -26,7 +28,6 @@ class sheet():
             newval[self.rc].append(i.value)
         self.val = newval
 
-
     def findrow(self, colstart, colfinish):
         self.update_sheet()
         r = 1
@@ -39,6 +40,9 @@ class sheet():
         row = self.findrow(0, 4) + 1
         self.worksheet.update_cell(row, 1, self.mappooler)
         self.worksheet.update_cell(row, 2, "https://osu.ppy.sh/b/{}".format(beatmapid))
+        if self.val[0][2] != "":
+            beatmap = osu.beatmaps(beatmapid)[0]
+            self.worksheet.update_cell(row, 3, "{} - {}".format(beatmap['artist'], beatmap['title']))
         self.worksheet.update_cell(row, 4, t)
         self.worksheet.update_cell(row, 5, comments)
     
@@ -83,9 +87,6 @@ class sheet():
         self.worksheet.update_cell(row, 12 + self.mappooleramt, "{} / {}".format(beatmap['diff_overall'], beatmap['diff_drain']))
         self.worksheet.update_cell(row, 13 + self.mappooleramt, mappicker)
 
-
-        
-    # nice --- "e^iz = isinz + cosz" b64---b25lIHplcm8gZWlnaHQgc2V2ZW4gbmluZSBzaXggemVybyB6ZXJv---
     def checkAgreement(self):
         self.update_sheet()
         agreement = []
@@ -113,6 +114,14 @@ class sheet():
     
     def showAllMaps(self):
         self.update_sheet()
+        t = self.get_database()
+        t = [i['maps'] for i in t if i['tour_id'].replace("\n", "") == self.tour_id]
+        try:
+            t = t[0]
+        except:
+            pass
+        artist_title_version = ["{} - {} [{}]".format(i.split("|")[0], i.split("|")[1], i.split("|")[2]) for i in t]
+        mapindatabase = [i.split("|")[-1] for i in t]
         beatmapsid = []
         type_ = []
         for i in self.val:
@@ -132,8 +141,55 @@ class sheet():
                 except:
                     continue
             try:
-                bmdata = osu.beatmaps(beatmapsid[i - 1])
-                str_beatmap_data += "[{}] {} - {} [{}] - https://osu.ppy.sh/b/{} ({}/{} Agreements)\n".format(type_[i - 1], bmdata['artist'], bmdata['title'], bmdata['version'], beatmapsid[i - 1], sumagreement, self.mappooleramt * self.max_score_rating)
+                if beatmapsid[i - 1] in mapindatabase:
+                    str_beatmap_data += "[{}] {} - https://osu.ppy.sh/b/{} ({}/{} Agreements)\n".format(type_[i - 1], artist_title_version[mapindatabase.index(beatmapsid[i - 1])], beatmapsid[i - 1], sumagreement, self.mappooleramt * self.max_score_rating)
+                else:
+                    bmdata = osu.beatmaps(beatmapsid[i - 1])
+                    str_beatmap_data += "[{}] {} - {} [{}] - https://osu.ppy.sh/b/{} ({}/{} Agreements)\n".format(type_[i - 1], bmdata['artist'], bmdata['title'], bmdata['version'], beatmapsid[i - 1], sumagreement, self.mappooleramt * self.max_score_rating)
+                    self.write_database([beatmapsid[i - 1]])
             except:
                 pass
         return str_beatmap_data
+    
+    @staticmethod
+    def _get_str_map_id_(mapid):
+        bmdata = osu.beatmaps(mapid)
+        return "{}|{}|{}|{}".format(bmdata['artist'], bmdata['title'], bmdata['version'], mapid)
+
+    @staticmethod
+    def get_database():
+        tourneys = []
+        if not path.isfile('db.mph'):
+            return tourneys
+        with open('db.mph', 'r') as database:
+            database = database.readlines()
+            for i in range(0, len(database), 2):
+                try:
+                    tourneys.append({'tour_id': database[i].replace("\n", ""), 'maps': database[i+1].replace("\n", "").split("&&&")})
+                except:
+                    tourneys.append({'tour_id': database[i], 'maps': []})
+        return tourneys
+    
+    def write_database(self, mapid):
+        if not path.isfile("db.mph"):
+            with open('db.mph', 'w+') as database:
+                database.write(self.tour_id)
+                database.write("\n")
+                strid = "&&&".join([self._get_str_map_id_(i) for i in mapid])
+                database.write(strid)
+                database.write("\n")
+        else:
+            t = self.get_database()
+            for i in range(len(t)):
+                if t[i]['tour_id'].replace("\n", "") == self.tour_id:
+                    t[i]['maps'] += [self._get_str_map_id_(i) for i in mapid]
+            self._write_db_for_dict_arr(t)
+    
+    @staticmethod
+    def _write_db_for_dict_arr(arr):
+        with open('db.mph', 'w+') as database:
+            for i in arr:
+                database.write(i['tour_id'].replace("\n", ""))
+                database.write("\n")
+                database.write("&&&".join(i['maps']).replace("\n", ""))
+                database.write("\n")
