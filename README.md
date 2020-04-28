@@ -5,7 +5,7 @@ Well, this is a little hard and slow to process because this is just the very fi
 I don't want you to waste the time reading this, so let's go to the first thing you need to know !
 
 --- Login Phase ---
-First time that you've entered this client, you need to provide the data of the "Mappool Selector Sheet" which is like the "Sample Mappool Sheet"
+- First time that you've entered this client, you need to provide the data of the "Mappool Selector Sheet" which is like the "Sample Mappool Sheet"
 "Sample Mappool Sheet" can be found here <https://docs.google.com/spreadsheets/d/1p_Af-h2YmlFavf9Eoq0iUE6OErhDqD0nPBhOJyxnrHU/edit?usp=sharing>
 
 How to get your own Spreadsheet which is like the "Sample Mappool Sheet" ?
